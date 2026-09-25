@@ -15,7 +15,7 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:RELEASE.2025-10-15T17-29-55Z
+    image: ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -25,7 +25,7 @@ services:
       - opentms_minio_data:/data
 
   minio-init:
-    image: minio/mc:RELEASE.2025-08-13T08-35-41Z-cpuv1
+    image: alpine:3.20
     depends_on:
       - minio
     environment:
@@ -36,6 +36,9 @@ services:
       - /bin/sh
       - -c
       - |
+        apk add --no-cache curl
+        curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/archive/mc.RELEASE.2025-08-13T08-35-41Z -o /usr/local/bin/mc
+        chmod +x /usr/local/bin/mc
         until mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"; do sleep 2; done
         mc mb --ignore-existing local/open-tms
         mc admin user add local opentms-storage "$$TMS_S3_SECRET" || true
@@ -53,13 +56,13 @@ services:
         condition: service_started
     environment:
       NODE_ENV: production
-      PORT: 3001
-      DATABASE_URL: postgresql://opentms:${TMS_DB_PASSWORD}@database:5432/opentms?schema=public&connection_limit=10
-      PUBLIC_URL: https://tms.charterconnect.online
-      CORS_ORIGINS: https://tms.charterconnect.online
+      PORT: "3001"
+      DATABASE_URL: "postgresql://opentms:${TMS_DB_PASSWORD}@database:5432/opentms?schema=public&connection_limit=10"
+      PUBLIC_URL: "https://tms.charterconnect.online"
+      CORS_ORIGINS: "https://tms.charterconnect.online"
       JWT_SECRET: ${TMS_JWT_SECRET}
       CREDENTIALS_ENCRYPTION_KEY: ${TMS_CREDENTIALS_ENCRYPTION_KEY}
-      S3_ENDPOINT: http://minio:9000
+      S3_ENDPOINT: "http://minio:9000"
       S3_BUCKET: open-tms
       S3_REGION: us-east-1
       S3_FORCE_PATH_STYLE: "true"
@@ -74,7 +77,7 @@ services:
     depends_on:
       - backend
     environment:
-      VITE_API_URL: https://api-tms.charterconnect.online
+      VITE_API_URL: "https://api-tms.charterconnect.online"
 
 volumes:
   opentms_postgres_data:
